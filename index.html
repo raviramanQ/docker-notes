@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker Notes — Ravi Raman One Shot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c5cfc;
+    --green: #00ff88;
+    --yellow: #ffd166;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .hero {
+    background: linear-gradient(135deg, #0d0f14 0%, #111827 50%, #0d1a2a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+  }
+  .hero h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-family: var(--mono);
+  }
+  .hero-sub b { color: var(--yellow); font-weight: 600; }
+
+  /* Nav */
+  .toc {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .toc a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .toc a:hover { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.06); }
+
+  /* Main layout */
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* Section */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: rgba(255,255,255,0.02); }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: rgba(0,212,255,0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(0,212,255,0.2);
+    min-width: 32px;
+    text-align: center;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    flex: 1;
+  }
+  .chevron {
+    color: var(--muted);
+    font-size: 0.85rem;
+    transition: transform 0.25s;
+  }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body {
+    display: none;
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .section.open .section-body { display: flex; }
+
+  /* Content blocks */
+  .note-block { font-size: 0.95rem; color: var(--text); }
+  .note-block p { margin-bottom: 0.5rem; }
+
+  .concept {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent3);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+  }
+  .concept-title {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent3);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .concept p, .concept li { font-size: 0.9rem; color: var(--text); }
+  .concept ul { padding-left: 1.2rem; }
+  .concept li { margin-bottom: 0.25rem; }
+
+  .cmd-block {
+    background: #080c12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cmd-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .cmd-body { padding: 0.8rem 1rem; }
+  .cmd {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--green);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .cmd:last-child { margin-bottom: 0; }
+  .cmd::before { content: '$'; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+  .cmd-comment {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding-left: 1rem;
+    margin-bottom: 0.6rem;
+    margin-top: -0.3rem;
+  }
+
+  .tip {
+    background: rgba(255,209,102,0.06);
+    border: 1px solid rgba(255,209,102,0.2);
+    border-radius: 8px;
+    padding: 0.8rem 1.1rem;
+    font-size: 0.88rem;
+    display: flex;
+    gap: 0.6rem;
+  }
+  .tip-icon { flex-shrink: 0; }
+
+  .warn {
+    background: rgba(255,107,53,0.07);
+    border: 1px solid rgba(255,107,53,0.25);
+    border-radius: 8px;
+    padding: 0.8rem 1.1rem;
+    font-size: 0.88rem;
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .card p, .card li { font-size: 0.88rem; }
+  .card ul { padding-left: 1.1rem; }
+  .card li { margin-bottom: 0.2rem; }
+
+  .vs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .vs-table th {
+    background: var(--surface2);
+    padding: 0.6rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-align: left;
+    color: var(--accent);
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--border);
+  }
+  .vs-table td {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .vs-table tr:last-child td { border-bottom: none; }
+  .vs-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    margin: 0 2px;
+  }
+  .tag-blue { background: rgba(0,212,255,0.12); color: var(--accent); }
+  .tag-orange { background: rgba(255,107,53,0.12); color: var(--accent2); }
+  .tag-green { background: rgba(0,255,136,0.1); color: var(--green); }
+  .tag-purple { background: rgba(124,92,252,0.12); color: var(--accent3); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  b { color: var(--yellow); }
+  .dim { color: var(--muted); font-size: 0.85rem; }
+
+  .yaml-block {
+    background: #080c12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.8;
+  }
+  .y-key { color: #79b8ff; }
+  .y-val { color: #9ecbff; }
+  .y-str { color: #85e89d; }
+  .y-num { color: #ffd166; }
+  .y-comment { color: #484f58; }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+  }
+  .flow-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+  .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+  /* Summary box at top */
+  .summary-bar {
+    background: linear-gradient(90deg, rgba(0,212,255,0.07), rgba(124,92,252,0.07));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: var(--mono);
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 1px; }
+
+  @media (max-width: 640px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .toc { gap: 0.3rem; }
+    .hero h1 { font-size: 1.6rem; }
+    .container { padding: 1.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">📦 Revision Notes</div>
+  <h1>Docker <span>Complete</span> One Shot</h1>
+  <p class="hero-sub">Ravi Raman &nbsp;|&nbsp; <b>~2 hours lecture</b> &nbsp;|&nbsp; Beginner → Production Ready</p>
+</div>
+
+<nav class="toc">
+  <a href="#s1">Why Docker</a>
+  <a href="#s2">Core Concepts</a>
+  <a href="#s3">Installation</a>
+  <a href="#s4">Basic Commands</a>
+  <a href="#s5">Port Binding</a>
+  <a href="#s6">Debugging</a>
+  <a href="#s7">Docker vs VM</a>
+  <a href="#s8">Networking</a>
+  <a href="#s9">Dockerfile</a>
+  <a href="#s10">Docker Compose</a>
+  <a href="#s11">Volumes</a>
+  <a href="#s12">Docker Hub</a>
+  <a href="#s13">Quick Reference</a>
+</nav>
+
+<div class="container">
+
+  <!-- Stats bar -->
+  <div class="summary-bar">
+    <div class="stat"><div class="stat-num">13</div><div class="stat-label">Topics</div></div>
+    <div class="stat"><div class="stat-num">40+</div><div class="stat-label">Commands</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Demo Apps</div></div>
+    <div class="stat"><div class="stat-num">2hrs</div><div class="stat-label">Lecture</div></div>
+    <div style="flex:1; display:flex; align-items:center; font-size:0.85rem; color:var(--muted);">
+      Covers: Images · Containers · Networking · Dockerfile · Compose · Volumes · Docker Hub
+    </div>
+  </div>
+
+  <!-- 1. Why Docker -->
+  <div class="section open" id="s1">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">01</span>
+      <span class="section-title">Why Docker? The Problem It Solves</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Imagine you're building a Node.js app with <b>Node v16</b> and <b>MongoDB 4.2</b>. Works perfectly on your machine. A new team member joins — they install dependencies manually, get version mismatches, and things break. This is the classic <b>"works on my machine"</b> problem.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">😤 Without Docker</div>
+          <ul>
+            <li>Each dev installs deps manually</li>
+            <li>Version mismatches cause errors</li>
+            <li>Env differences break builds</li>
+            <li>"It works on my machine!" syndrome</li>
+            <li>Onboarding takes hours/days</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">✅ With Docker</div>
+          <ul>
+            <li>App + all deps packed in one unit</li>
+            <li>Same container runs anywhere</li>
+            <li>Onboarding = just pull & run</li>
+            <li>Multiple versions side by side</li>
+            <li>No conflicts between projects</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span>Docker solves the environment consistency problem by bundling the application with all its dependencies into a single portable unit called a <b>container</b>.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Core Concepts -->
+  <div class="section open" id="s2">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">02</span>
+      <span class="section-title">Core Concepts: Image vs Container</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="grid2">
+        <div class="concept">
+          <div class="concept-title">🖼 Docker Image</div>
+          <ul>
+            <li>Executable blueprint/template</li>
+            <li>Contains app + all its dependencies</li>
+            <li>Static — does not run by itself</li>
+            <li>Like a <b>Class</b> in OOP</li>
+            <li>Stored on Docker Hub (registry)</li>
+            <li>Smaller in size (no runtime memory)</li>
+          </ul>
+        </div>
+        <div class="concept">
+          <div class="concept-title">📦 Docker Container</div>
+          <ul>
+            <li>A running instance of an image</li>
+            <li>Has its own isolated file system</li>
+            <li>Dynamic — actively consumes resources</li>
+            <li>Like an <b>Object</b> in OOP</li>
+            <li>One image → multiple containers</li>
+            <li>Larger (occupies RAM when running)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note-block">
+        <p><b>Analogy:</b> Image is like a <code>class</code>, Container is like an <code>object</code> created from that class. You can create many objects (containers) from one class (image).</p>
+      </div>
+      <div class="concept">
+        <div class="concept-title">🔑 Key Properties of Containers</div>
+        <ul>
+          <li><b>Portability</b> — run on any OS without changes</li>
+          <li><b>Isolation</b> — completely separate from host OS and other containers</li>
+          <li><b>Lightweight</b> — minimal overhead, fast to start/stop</li>
+          <li><b>Layered</b> — images are built in layers (efficient storage & sharing)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Installation -->
+  <div class="section" id="s3">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">03</span>
+      <span class="section-title">Installation & Setup</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Download <b>Docker Desktop</b> from <code>docker.com</code> — available for Mac, Windows, Linux. Docker Desktop includes the Docker engine, CLI, and a GUI.</p>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Verify Installation</div>
+        <div class="cmd-body">
+          <div class="cmd">docker</div>
+          <div class="cmd-comment"># If Docker is installed, shows list of available commands</div>
+          <div class="cmd">docker --version</div>
+          <div class="cmd-comment"># Shows installed Docker version</div>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span>Docker Desktop GUI shows Containers (left panel) and Images. You can manage everything from GUI or CLI — CLI is preferred in practice.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Basic Commands -->
+  <div class="section open" id="s4">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">04</span>
+      <span class="section-title">Essential Docker Commands</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="cmd-block">
+        <div class="cmd-label">Images</div>
+        <div class="cmd-body">
+          <div class="cmd">docker pull &lt;image-name&gt;</div>
+          <div class="cmd-comment"># Download image from Docker Hub</div>
+          <div class="cmd">docker pull mysql:8.0</div>
+          <div class="cmd-comment"># Pull specific version using tag</div>
+          <div class="cmd">docker images</div>
+          <div class="cmd-comment"># List all local images</div>
+          <div class="cmd">docker rmi &lt;image-name&gt;</div>
+          <div class="cmd-comment"># Remove an image (must remove containers first)</div>
+        </div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Containers — Create &amp; Run</div>
+        <div class="cmd-body">
+          <div class="cmd">docker run &lt;image-name&gt;</div>
+          <div class="cmd-comment"># Create + start container from image</div>
+          <div class="cmd">docker run -d &lt;image-name&gt;</div>
+          <div class="cmd-comment"># Run in detached (background) mode</div>
+          <div class="cmd">docker run -it ubuntu /bin/bash</div>
+          <div class="cmd-comment"># Run interactively (enter container shell)</div>
+          <div class="cmd">docker run --name mydb -d mysql</div>
+          <div class="cmd-comment"># Assign custom name to container</div>
+          <div class="cmd">docker run -e ENV_VAR=value &lt;image&gt;</div>
+          <div class="cmd-comment"># Pass environment variables</div>
+        </div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Containers — Manage</div>
+        <div class="cmd-body">
+          <div class="cmd">docker ps</div>
+          <div class="cmd-comment"># List RUNNING containers</div>
+          <div class="cmd">docker ps -a</div>
+          <div class="cmd-comment"># List ALL containers (running + stopped)</div>
+          <div class="cmd">docker start &lt;container-name/id&gt;</div>
+          <div class="cmd-comment"># Restart a stopped container</div>
+          <div class="cmd">docker stop &lt;container-name/id&gt;</div>
+          <div class="cmd-comment"># Stop a running container</div>
+          <div class="cmd">docker rm &lt;container-name/id&gt;</div>
+          <div class="cmd-comment"># Delete a container permanently</div>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">⚠️</span>
+        <span>To delete an image, you must first <b>remove all containers</b> using that image. You cannot delete an image that's in use, even by a stopped container.</span>
+      </div>
+      <div class="concept">
+        <div class="concept-title">How docker run works internally</div>
+        <div class="flow">
+          <div class="flow-box">docker run</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Docker Daemon</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Check local image</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Pull from Hub if missing</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Create container</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Run it</div>
+        </div>
+      </div>
+      <div class="concept">
+        <div class="concept-title">🔢 Image Layers</div>
+        <p>Docker images are made of <b>layers</b>. Each version of an image shares common base layers. When pulling a new version, only the <b>different layers</b> are downloaded — not the whole image again. This saves storage.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Port Binding -->
+  <div class="section open" id="s5">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">05</span>
+      <span class="section-title">Port Binding (Host ↔ Container)</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Each container has its own internal ports. To access a service inside a container from your browser/app, you must <b>map</b> (bind) a host port to the container's port.</p>
+      </div>
+      <div class="concept">
+        <div class="concept-title">Port Binding Diagram</div>
+        <div class="flow" style="margin-top:0.5rem;">
+          <div class="flow-box">Your Browser (localhost:8080)</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Host Port 8080</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Container Port 3306</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">MySQL inside container</div>
+        </div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Port Binding Syntax: -p host_port:container_port</div>
+        <div class="cmd-body">
+          <div class="cmd">docker run -d -p 8080:3306 mysql</div>
+          <div class="cmd-comment"># Map host:8080 → container:3306</div>
+          <div class="cmd">docker run -d -p 27017:27017 mongo</div>
+          <div class="cmd-comment"># MongoDB: same port on both sides</div>
+          <div class="cmd">docker run -d -p 8081:8081 mongo-express</div>
+          <div class="cmd-comment"># Mongo Express UI</div>
+        </div>
+      </div>
+      <div class="warn">
+        <span>⚠️</span>
+        <span><b>Port conflict:</b> Two containers CANNOT be mapped to the same HOST port. If port 8080 is taken, use 8081, 8082 etc. Container ports can be the same since they're isolated.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Debugging -->
+  <div class="section" id="s6">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">06</span>
+      <span class="section-title">Debugging Containers</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="cmd-block">
+        <div class="cmd-label">Logs &amp; Shell Access</div>
+        <div class="cmd-body">
+          <div class="cmd">docker logs &lt;container-id&gt;</div>
+          <div class="cmd-comment"># See all logs from a container</div>
+          <div class="cmd">docker logs -f &lt;container-id&gt;</div>
+          <div class="cmd-comment"># Follow live logs (like tail -f)</div>
+          <div class="cmd">docker exec -it &lt;container-name&gt; /bin/bash</div>
+          <div class="cmd-comment"># Enter interactive shell inside RUNNING container</div>
+          <div class="cmd">exit</div>
+          <div class="cmd-comment"># Exit shell — container keeps running!</div>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span><code>docker exec -it</code> is used to enter a <b>running</b> container. Exiting does NOT stop the container — it just disconnects your shell session.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Docker vs VM -->
+  <div class="section" id="s7">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">07</span>
+      <span class="section-title">Docker vs Virtual Machines</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <table class="vs-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Docker Container</th>
+            <th>Virtual Machine</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Virtualizes</td><td>Application layer only</td><td>OS kernel + application</td></tr>
+          <tr><td>Size</td><td>MBs — very lightweight</td><td>GBs — heavy</td></tr>
+          <tr><td>Startup time</td><td>Seconds</td><td>Minutes</td></tr>
+          <tr><td>OS compatibility</td><td>Limited (shares host kernel)</td><td>Any OS, fully independent</td></tr>
+          <tr><td>Resource usage</td><td>Low — shares host resources</td><td>High — dedicated resources</td></tr>
+          <tr><td>Isolation</td><td>Process-level</td><td>Full OS-level</td></tr>
+        </tbody>
+      </table>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span>Docker's main <b>disadvantage</b>: since it virtualizes only the application layer (not the kernel), containers need to be compatible with the host OS kernel. VMs don't have this limitation since they virtualize the full OS.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Networking -->
+  <div class="section" id="s8">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">08</span>
+      <span class="section-title">Docker Networking</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Docker networking controls how containers talk to each other and to the outside world. For containers to communicate (e.g., Node.js app talking to MongoDB), they need to be on the <b>same network</b>.</p>
+      </div>
+      <div class="concept">
+        <div class="concept-title">3 Default Network Drivers</div>
+        <ul>
+          <li><b>Bridge</b> (default) — containers on same host can talk to each other; most common use case</li>
+          <li><b>Host</b> — container shares the host machine's network; no separate IP for container</li>
+          <li><b>None</b> — fully isolated; no networking at all</li>
+        </ul>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Default Bridge Network</div>
+          <p>Containers can communicate but need extra config (IP addresses). Less convenient.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Custom Bridge Network</div>
+          <p>Containers talk using <b>container names</b> directly. Much easier! This is what you use in real apps.</p>
+        </div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Network Commands</div>
+        <div class="cmd-body">
+          <div class="cmd">docker network ls</div>
+          <div class="cmd-comment"># List all networks</div>
+          <div class="cmd">docker network create mongo-network</div>
+          <div class="cmd-comment"># Create a custom network</div>
+          <div class="cmd">docker run -d --network mongo-network --name mongo mongo</div>
+          <div class="cmd-comment"># Run container inside a specific network</div>
+        </div>
+      </div>
+      <div class="concept">
+        <div class="concept-title">Demo: MongoDB + Mongo Express on same network</div>
+        <p>MongoDB container + Mongo Express container placed in <b>mongo-network</b>. Mongo Express connects to MongoDB using the container name <code>mongo</code> instead of an IP or localhost. This is why custom networks are so powerful.</p>
+        <div style="margin-top:0.75rem;">
+          <div class="cmd-block">
+            <div class="cmd-label">Full setup commands</div>
+            <div class="cmd-body">
+              <div class="cmd">docker network create mongo-network</div>
+              <div class="cmd">docker run -d \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -p 27017:27017 --name mongo \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  --network mongo-network \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -e MONGO_INITDB_ROOT_USERNAME=admin \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -e MONGO_INITDB_ROOT_PASSWORD=kty \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  mongo</div>
+              <div class="cmd" style="margin-top:0.75rem;">docker run -d \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -p 8081:8081 --name mongo-express \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  --network mongo-network \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -e ME_CONFIG_MONGODB_ADMINPASSWORD=kty \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  -e ME_CONFIG_MONGODB_SERVER=mongo \</div>
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--green);padding-left:2rem;">  mongo-express</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Dockerfile -->
+  <div class="section open" id="s9">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">09</span>
+      <span class="section-title">Dockerfile — Dockerizing Your App</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>A <b>Dockerfile</b> is a text file with instructions to build your own Docker image. In production, tools like Jenkins automatically build Docker images from your code using Dockerfiles.</p>
+      </div>
+      <div class="concept">
+        <div class="concept-title">Key Dockerfile Instructions</div>
+        <table class="vs-table" style="margin-top:0.5rem;">
+          <thead><tr><th>Instruction</th><th>Purpose</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><code>FROM</code></td><td>Base image to build upon</td><td><code>FROM node:16</code></td></tr>
+            <tr><td><code>WORKDIR</code></td><td>Set working directory inside container</td><td><code>WORKDIR /app</code></td></tr>
+            <tr><td><code>COPY</code></td><td>Copy files from host into image</td><td><code>COPY . /app</code></td></tr>
+            <tr><td><code>RUN</code></td><td>Execute command at build time</td><td><code>RUN npm install</code></td></tr>
+            <tr><td><code>CMD</code></td><td>Command to run when container starts (only 1)</td><td><code>CMD ["node", "server.js"]</code></td></tr>
+            <tr><td><code>EXPOSE</code></td><td>Document which port the container uses</td><td><code>EXPOSE 5050</code></td></tr>
+            <tr><td><code>ENV</code></td><td>Set environment variables</td><td><code>ENV NODE_ENV=production</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note-block"><p><b>Example Dockerfile for Node.js app:</b></p></div>
+      <div class="yaml-block">
+        <span class="y-comment"># Dockerfile (capital D, no extension!)</span><br>
+        <span class="y-key">FROM</span> <span class="y-str">node:16</span><br><br>
+        <span class="y-comment"># Set environment variables</span><br>
+        <span class="y-key">ENV</span> <span class="y-val">MONGO_USERNAME</span>=<span class="y-str">admin</span><br>
+        <span class="y-key">ENV</span> <span class="y-val">MONGO_PASSWORD</span>=<span class="y-str">kty</span><br><br>
+        <span class="y-comment"># Create working directory</span><br>
+        <span class="y-key">WORKDIR</span> <span class="y-str">/test-app</span><br><br>
+        <span class="y-comment"># Copy all files from host into container</span><br>
+        <span class="y-key">COPY</span> <span class="y-str">. /test-app</span><br><br>
+        <span class="y-comment"># Install node modules at build time</span><br>
+        <span class="y-key">RUN</span> <span class="y-str">npm install</span><br><br>
+        <span class="y-comment"># Expose container port</span><br>
+        <span class="y-key">EXPOSE</span> <span class="y-num">5050</span><br><br>
+        <span class="y-comment"># Start command (only ONE allowed)</span><br>
+        <span class="y-key">CMD</span> <span class="y-str">["node", "test-app/server.js"]</span>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Build &amp; Run Your Image</div>
+        <div class="cmd-body">
+          <div class="cmd">docker build -t test-app:1.0 .</div>
+          <div class="cmd-comment"># Build image from Dockerfile in current dir (-t = tag)</div>
+          <div class="cmd">docker images</div>
+          <div class="cmd-comment"># Verify image was created</div>
+          <div class="cmd">docker run -d -p 5050:5050 test-app:1.0</div>
+          <div class="cmd-comment"># Run your custom image</div>
+          <div class="cmd">docker run -it test-app:1.0 bash</div>
+          <div class="cmd-comment"># Enter container interactively to explore</div>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span><b>RUN</b> executes at <b>build time</b> (when creating the image). <b>CMD</b> executes at <b>run time</b> (when starting the container). Only one CMD allowed — the last one wins.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Docker Compose -->
+  <div class="section open" id="s10">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">10</span>
+      <span class="section-title">Docker Compose — Multi-Container Management</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Running 2–3 containers with long <code>docker run</code> commands is messy. <b>Docker Compose</b> lets you define all containers in a single <code>.yaml</code> file and manage them with simple commands.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">docker-compose up</div>
+          <p>Creates and starts <b>all containers</b> defined in the yaml file. Add <code>-d</code> for detached mode.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">docker-compose down</div>
+          <p><b>Stops and removes</b> all containers AND the created network. Permanent removal.</p>
+        </div>
+      </div>
+      <div class="note-block"><p><b>docker-compose.yaml example (MongoDB + Mongo Express):</b></p></div>
+      <div class="yaml-block">
+        <span class="y-key">version</span>: <span class="y-str">'3'</span><br><br>
+        <span class="y-key">services</span>:<br>
+        &nbsp;&nbsp;<span class="y-key">mongodb</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">image</span>: <span class="y-str">mongo</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">ports</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-str">"27017:27017"</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">environment</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-val">MONGO_INITDB_ROOT_USERNAME</span>=<span class="y-str">admin</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-val">MONGO_INITDB_ROOT_PASSWORD</span>=<span class="y-str">kty</span><br><br>
+        &nbsp;&nbsp;<span class="y-key">mongo-express</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">image</span>: <span class="y-str">mongo-express</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">ports</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-str">"8081:8081"</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">environment</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-val">ME_CONFIG_MONGODB_ADMINUSERNAME</span>=<span class="y-str">admin</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-val">ME_CONFIG_MONGODB_ADMINPASSWORD</span>=<span class="y-str">kty</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-val">ME_CONFIG_MONGODB_SERVER</span>=<span class="y-str">mongodb</span>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span>Docker Compose <b>automatically creates a network</b> for all services defined in the file — no need to manually create one like we did earlier. Services can reference each other by <b>service name</b>.</span>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Compose Commands</div>
+        <div class="cmd-body">
+          <div class="cmd">docker-compose -f docker-compose.yaml up -d</div>
+          <div class="cmd-comment"># Start all services in background</div>
+          <div class="cmd">docker-compose -f docker-compose.yaml down</div>
+          <div class="cmd-comment"># Stop and remove all containers + network</div>
+        </div>
+      </div>
+      <div class="warn">
+        <span>⚠️</span>
+        <span>Before running <code>docker-compose up</code>, stop and remove any manually created containers using the same ports to avoid conflicts.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. Volumes -->
+  <div class="section open" id="s11">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">11</span>
+      <span class="section-title">Volumes — Data Persistence</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p><b>Problem:</b> When a container stops or is deleted, all data inside it is <b>lost</b>. Databases especially need persistent storage across restarts.</p>
+        <p><b>Solution:</b> Docker Volumes — mount a host directory into the container so data is saved on your machine.</p>
+      </div>
+      <div class="concept">
+        <div class="concept-title">3 Types of Volumes</div>
+        <ul>
+          <li><b>Named Volume</b> — has a name, Docker manages location; best for production</li>
+          <li><b>Anonymous Volume</b> — no name, temporary storage; can become orphaned</li>
+          <li><b>Bind Mount</b> — you specify exact host path; most control, used in dev</li>
+        </ul>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Volume Commands</div>
+        <div class="cmd-body">
+          <div class="cmd">docker volume ls</div>
+          <div class="cmd-comment"># List all volumes</div>
+          <div class="cmd">docker volume create my_volume</div>
+          <div class="cmd-comment"># Create a named volume</div>
+          <div class="cmd">docker run -v /host/path:/container/path ubuntu</div>
+          <div class="cmd-comment"># Bind mount: link host folder to container folder</div>
+          <div class="cmd">docker run -v my_volume:/data ubuntu</div>
+          <div class="cmd-comment"># Named volume: attach to container</div>
+          <div class="cmd">docker volume prune</div>
+          <div class="cmd-comment"># Delete all unused/orphaned volumes</div>
+        </div>
+      </div>
+      <div class="note-block"><p><b>Volumes in Docker Compose (for MongoDB persistence):</b></p></div>
+      <div class="yaml-block">
+        <span class="y-key">services</span>:<br>
+        &nbsp;&nbsp;<span class="y-key">mongodb</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">image</span>: <span class="y-str">mongo</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="y-key">volumes</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="y-str">/Users/you/Desktop/data:/data/db</span><br>
+        <span class="y-comment">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# host path : container path</span>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">💡</span>
+        <span>When you restart containers with volumes attached, the <b>data reappears</b> — databases, collections, everything. This is how real apps maintain data across deployments.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. Docker Hub -->
+  <div class="section" id="s12">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">12</span>
+      <span class="section-title">Docker Hub — Sharing Images</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note-block">
+        <p>Docker Hub is the public registry where images are stored. You can push your own images so teammates can pull them directly — no need to share source code separately.</p>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label">Push Your Image to Docker Hub</div>
+        <div class="cmd-body">
+          <div class="cmd">docker build -t your-username/test-app:1.0 .</div>
+          <div class="cmd-comment"># Build with repo name matching Docker Hub repo</div>
+          <div class="cmd">docker logout</div>
+          <div class="cmd-comment"># (Optional) logout of any existing session</div>
+          <div class="cmd">docker login</div>
+          <div class="cmd-comment"># Login with Docker Hub credentials</div>
+          <div class="cmd">docker push your-username/test-app:1.0</div>
+          <div class="cmd-comment"># Push all layers to Docker Hub</div>
+          <div class="cmd">docker pull your-username/test-app:1.0</div>
+          <div class="cmd-comment"># Pull your own image back / others can pull it</div>
+        </div>
+      </div>
+      <div class="concept">
+        <div class="concept-title">Production Workflow (CI/CD)</div>
+        <div class="flow">
+          <div class="flow-box">Dev pushes code</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Jenkins (CI/CD)</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">docker build</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">docker push to Hub</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">Server pulls & deploys</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. Quick Reference -->
+  <div class="section open" id="s13">
+    <div class="section-header" onclick="toggle(this)">
+      <span class="section-num">13</span>
+      <span class="section-title">⚡ Quick Reference Cheat Sheet</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="grid2">
+        <div class="cmd-block">
+          <div class="cmd-label">Images</div>
+          <div class="cmd-body">
+            <div class="cmd">docker pull &lt;image&gt;[:tag]</div>
+            <div class="cmd">docker images</div>
+            <div class="cmd">docker rmi &lt;image&gt;</div>
+            <div class="cmd">docker build -t name:tag .</div>
+          </div>
+        </div>
+        <div class="cmd-block">
+          <div class="cmd-label">Containers</div>
+          <div class="cmd-body">
+            <div class="cmd">docker run -d -p H:C --name n img</div>
+            <div class="cmd">docker ps [-a]</div>
+            <div class="cmd">docker start/stop &lt;name/id&gt;</div>
+            <div class="cmd">docker rm &lt;name/id&gt;</div>
+          </div>
+        </div>
+        <div class="cmd-block">
+          <div class="cmd-label">Debug</div>
+          <div class="cmd-body">
+            <div class="cmd">docker logs &lt;id&gt;</div>
+            <div class="cmd">docker exec -it &lt;name&gt; /bin/bash</div>
+          </div>
+        </div>
+        <div class="cmd-block">
+          <div class="cmd-label">Compose</div>
+          <div class="cmd-body">
+            <div class="cmd">docker-compose -f file.yaml up -d</div>
+            <div class="cmd">docker-compose -f file.yaml down</div>
+          </div>
+        </div>
+        <div class="cmd-block">
+          <div class="cmd-label">Volumes</div>
+          <div class="cmd-body">
+            <div class="cmd">docker volume ls / create / prune</div>
+            <div class="cmd">docker run -v host:container img</div>
+          </div>
+        </div>
+        <div class="cmd-block">
+          <div class="cmd-label">Network</div>
+          <div class="cmd-body">
+            <div class="cmd">docker network ls</div>
+            <div class="cmd">docker network create &lt;name&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="concept" style="margin-top:0.5rem;">
+        <div class="concept-title">Common docker run flags to remember</div>
+        <ul>
+          <li><code>-d</code> — detached (background) mode</li>
+          <li><code>-it</code> — interactive terminal mode</li>
+          <li><code>-p H:C</code> — port binding (host:container)</li>
+          <li><code>--name</code> — assign name to container</li>
+          <li><code>-e KEY=VAL</code> — set environment variable</li>
+          <li><code>--network</code> — specify network</li>
+          <li><code>-v host:container</code> — bind mount volume</li>
+        </ul>
+      </div>
+
+      <div class="concept">
+        <div class="concept-title">📌 Important Things to Remember</div>
+        <ul>
+          <li>Image → Container is like Class → Object</li>
+          <li>Must remove containers before removing their image</li>
+          <li>Two containers can't share the same HOST port</li>
+          <li>Only ONE CMD in a Dockerfile (last one wins)</li>
+          <li>Data is lost on container deletion unless volumes are used</li>
+          <li>Docker Compose auto-creates a network for all services</li>
+          <li>Custom bridge networks let containers communicate by name</li>
+          <li><code>exec -it</code> only works on RUNNING containers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>
